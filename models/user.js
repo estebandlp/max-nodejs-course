@@ -1,11 +1,12 @@
+const Product = require("../models/product");
 const mongoDb = require("mongodb");
 const getDb = require("../util/database").getDb;
-
 class User {
-  constructor(username, email, id) {
-    this.id = id ? new mongoDb.ObjectId(id) : null;
+  constructor(username, email, cart, id) {
+    this._id = id;
     this.name = username;
     this.email = email;
+    this.cart = cart ? cart : { items: [] };
   }
 
   save() {
@@ -16,6 +17,69 @@ class User {
       .catch((err) => {
         console.log(err);
       });
+  }
+
+  addToCart(product) {
+    const cartProductIndex = this.cart.items.findIndex((cp) => {
+      return cp.productId.equals(product._id);
+    });
+
+    let newQuantity = 1;
+    const updatedCartItems = [...this.cart.items];
+
+    if (cartProductIndex >= 0) {
+      newQuantity = this.cart.items[cartProductIndex].quantity + 1;
+      updatedCartItems[cartProductIndex].quantity = newQuantity;
+    } else {
+      updatedCartItems.push({
+        productId: new mongoDb.ObjectId(product._id),
+        quantity: newQuantity,
+      });
+    }
+
+    const updatedCart = {
+      items: updatedCartItems,
+    };
+
+    return getDb()
+      .collection("users")
+      .updateOne(
+        { _id: new mongoDb.ObjectId(this._id) },
+        { $set: { cart: updatedCart } }
+      );
+  }
+
+  deleteItemFromCart(prodId) {
+    const updatedCart = this.cart.items.filter((item) => {
+      return !item.productId.equals(prodId);
+    });
+
+    return getDb()
+      .collection("users")
+      .updateOne(
+        { _id: new mongoDb.ObjectId(this._id) },
+        { $set: { cart: { items: updatedCart } } }
+      );
+  }
+
+  getCart() {
+    const productIds = this.cart.items.map((item) => {
+      return item.productId;
+    });
+
+    return Product.findByIdIn(productIds).then((products) => {
+      let productIndex = 0;
+      return products.map((product) => {
+        productIndex = this.cart.items.findIndex((item) =>
+          item.productId.equals(product._id)
+        );
+
+        return {
+          ...product,
+          quantity: this.cart.items[productIndex].quantity,
+        };
+      });
+    });
   }
 
   static findById(userId) {
