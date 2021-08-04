@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const databaseConnect = () => {
   return mongoose.connect(
-    "mongodb+srv://user:<password>@cluster0.e8dgv.mongodb.net/Cluster0?retryWrites=true&w=majority"
+    "mongodb+srv://estebandlp:6DbMV0FNxfu2ZboI@cluster0.e8dgv.mongodb.net/shop?retryWrites=true&w=majority"
   );
 };
 
