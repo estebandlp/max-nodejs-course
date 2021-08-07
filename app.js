@@ -4,22 +4,40 @@ const express = require("express");
 const bodyParser = require("body-parser");
 
 const errorController = require("./controllers/error");
-const databaseConnect = require("./util/database");
+const databaseConnect = require("./util/database").databaseConnect;
 const User = require("./models/user");
+const session = require("express-session");
+const MongoDBStore = require("connect-mongodb-session")(session);
 
 const app = express();
+const store = new MongoDBStore({
+  uri: require("./util/database").MONGODB_URI,
+  collection: "sessions",
+});
 
 app.set("view engine", "ejs");
 app.set("views", "views");
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
+const authRoutes = require("./routes/auth");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  session({
+    secret: "in-production-must-be-long-string-value",
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+  })
+);
 
 app.use((req, res, next) => {
-  User.findById("610609c0f8db3e3498083139")
+  if (!req.session.user) {
+    return next();
+  }
+  User.findById(req.session.user._id)
     .then((user) => {
       req.user = user;
       next();
@@ -31,6 +49,7 @@ app.use((req, res, next) => {
 
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 
 app.use(errorController.get404);
 
