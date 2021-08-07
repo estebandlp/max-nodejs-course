@@ -9,7 +9,7 @@ exports.getProducts = (req, res, next) => {
         prods: products,
         pageTitle: "All Products",
         path: "/products",
-        isAuthenticated: req.user.isLoggedIn,
+        isAuthenticated: req.user,
       });
     })
     .catch((err) => {
@@ -25,7 +25,7 @@ exports.getProduct = (req, res, next) => {
         product: product,
         pageTitle: product.title,
         path: "/products",
-        isAuthenticated: req.user.isLoggedIn,
+        isAuthenticated: req.user,
       });
     })
     .catch((err) => console.log(err));
@@ -38,7 +38,7 @@ exports.getIndex = (req, res, next) => {
         prods: products,
         pageTitle: "Shop",
         path: "/",
-        isAuthenticated: req.user.isLoggedIn,
+        isAuthenticated: req.user,
       });
     })
     .catch((err) => {
@@ -47,7 +47,8 @@ exports.getIndex = (req, res, next) => {
 };
 
 exports.getCart = (req, res, next) => {
-  req.user
+  const user = req.user;
+  user
     .populate("cart.items.productId")
     .execPopulate()
     .then((user) => {
@@ -57,7 +58,7 @@ exports.getCart = (req, res, next) => {
         path: "/cart",
         pageTitle: "Your Cart",
         products: products,
-        isAuthenticated: req.user.isLoggedIn,
+        isAuthenticated: req.user,
       });
     });
 };
@@ -98,7 +99,7 @@ exports.postOrder = (req, res, next) => {
       const order = new Order({
         user: {
           name: req.user.name,
-          userId: req.user,
+          userId: req.user._id,
         },
         products: products,
       });
@@ -121,7 +122,7 @@ exports.getOrders = (req, res, next) => {
         path: "/orders",
         pageTitle: "Your Orders",
         orders: orders,
-        isAuthenticated: req.user.isLoggedIn,
+        isAuthenticated: req.user,
       });
     })
     .catch((err) => console.log(err));
