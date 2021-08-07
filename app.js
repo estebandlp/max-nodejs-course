@@ -54,22 +54,7 @@ app.use(authRoutes);
 app.use(errorController.get404);
 
 databaseConnect()
-  .then((result) => {
-    User.findOne()
-      .then((user) => {
-        if (!user) {
-          const user = new User({
-            name: "Esteban",
-            email: "estebanddlp@gmail.com",
-            cart: {
-              items: [],
-            },
-          });
-
-          user.save();
-        }
-      })
-      .catch((err) => {});
+  .then(() => {
     app.listen(3000);
   })
   .catch((err) => {
