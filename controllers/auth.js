@@ -16,9 +16,6 @@ exports.postLogin = (req, res, next) => {
       if (!user) {
         return res.redirect("/login");
       }
-
-      console.log(user.password, req.body.password);
-
       return bcrypt
         .compare(req.body.password, user.password)
         .then((doMatch) => {

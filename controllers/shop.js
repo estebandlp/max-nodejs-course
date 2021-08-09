@@ -37,8 +37,7 @@ exports.getIndex = (req, res, next) => {
       res.render("shop/index", {
         prods: products,
         pageTitle: "Shop",
-        path: "/",
-        isAuthenticated: req.user,
+        path: "/"
       });
     })
     .catch((err) => {
