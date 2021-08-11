@@ -9,6 +9,7 @@ const User = require("./models/user");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
 const csrf = require("csurf");
+const connectFlash = require("connect-flash");
 
 const app = express();
 const store = new MongoDBStore({
@@ -36,6 +37,7 @@ app.use(
   })
 );
 app.use(csrfProtection);
+app.use(connectFlash());
 
 app.use((req, res, next) => {
   if (!req.session.user) {
