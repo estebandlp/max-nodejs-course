@@ -8,12 +8,16 @@ const databaseConnect = require("./util/database").databaseConnect;
 const User = require("./models/user");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
+const csrf = require("csurf");
+const connectFlash = require("connect-flash");
 
 const app = express();
 const store = new MongoDBStore({
   uri: require("./util/database").MONGODB_URI,
   collection: "sessions",
 });
+
+const csrfProtection = csrf();
 
 app.set("view engine", "ejs");
 app.set("views", "views");
@@ -32,6 +36,8 @@ app.use(
     store: store,
   })
 );
+app.use(csrfProtection);
+app.use(connectFlash());
 
 app.use((req, res, next) => {
   if (!req.session.user) {
@@ -47,6 +53,12 @@ app.use((req, res, next) => {
     });
 });
 
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
+
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
@@ -54,22 +66,7 @@ app.use(authRoutes);
 app.use(errorController.get404);
 
 databaseConnect()
-  .then((result) => {
-    User.findOne()
-      .then((user) => {
-        if (!user) {
-          const user = new User({
-            name: "Esteban",
-            email: "estebanddlp@gmail.com",
-            cart: {
-              items: [],
-            },
-          });
-
-          user.save();
-        }
-      })
-      .catch((err) => {});
+  .then(() => {
     app.listen(3000);
   })
   .catch((err) => {
