@@ -53,24 +53,10 @@ exports.getEditProduct = (req, res, next) => {
     .catch((err) => console.log(err));
 };
 
-exports.postEditProduct = (req, res, next) => {
-  Product.findById(req.body.productId)
-    .then((productFetched) => {
-      productFetched.title = req.body.title;
-      productFetched.price = req.body.price;
-      productFetched.imageUrl = req.body.imageUrl;
-      productFetched.description = req.body.description;
-
-      productFetched.save();
-    })
-    .then(() => {
-      res.redirect("/admin/products");
-    })
-    .catch((err) => console.log(err));
-};
-
 exports.getProducts = (req, res, next) => {
-  Product.find()
+  Product.find({
+    userId: req.user._id,
+  })
     .then((products) => {
       res.render("admin/products", {
         prods: products,
@@ -81,9 +67,30 @@ exports.getProducts = (req, res, next) => {
     .catch((err) => console.log(err));
 };
 
+exports.postEditProduct = (req, res, next) => {
+  Product.findById(req.body.productId)
+    .then((productFetched) => {
+      if (productFetched.userId.toString() !== req.user._id.toString()) {
+        return res.redirect("/");
+      }
+
+      productFetched.title = req.body.title;
+      productFetched.price = req.body.price;
+      productFetched.imageUrl = req.body.imageUrl;
+      productFetched.description = req.body.description;
+
+      productFetched.save().then(() => {
+        res.redirect("/admin/products");
+      });
+    })
+    .catch((err) => console.log(err));
+};
+
 exports.postDeleteProduct = (req, res, next) => {
-  const prodId = req.body.productId;
-  Product.findByIdAndRemove(prodId)
+  Product.deleteOne({
+    _id: req.body.productId,
+    userId: req.user._id,
+  })
     .then(() => {
       res.redirect("/admin/products");
     })
