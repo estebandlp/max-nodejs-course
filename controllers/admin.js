@@ -1,4 +1,5 @@
 const Product = require("../models/product");
+const { validationResult } = require("express-validator/check");
 
 exports.getAddProduct = (req, res, next) => {
   if (!req.session.isLoggedIn) {
@@ -9,10 +10,33 @@ exports.getAddProduct = (req, res, next) => {
     pageTitle: "Add Product",
     path: "/admin/add-product",
     editing: false,
+    hasError: false,
+    errorMessage: null,
+    validationErrors: [],
   });
 };
 
 exports.postAddProduct = (req, res, next) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/add-product",
+      editing: false,
+      hasError: true,
+      errorMessage: errors.array()[0].msg,
+      validationErrors: errors.array(),
+      product: {
+        _id: req.productId,
+        title: req.body.title,
+        price: req.body.price,
+        description: req.body.description,
+        imageUrl: req.body.imageUrl,
+      },
+    });
+  }
+
   const product = new Product({
     title: req.body.title,
     price: req.body.price,
@@ -47,7 +71,10 @@ exports.getEditProduct = (req, res, next) => {
         pageTitle: "Edit Product",
         path: "/admin/edit-product",
         editing: editMode,
+        hasError: false,
         product: product,
+        errorMessage: null,
+        validationErrors: [],
       });
     })
     .catch((err) => console.log(err));
@@ -68,6 +95,26 @@ exports.getProducts = (req, res, next) => {
 };
 
 exports.postEditProduct = (req, res, next) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/add-product",
+      editing: true,
+      hasError: true,
+      errorMessage: errors.array()[0].msg,
+      validationErrors: errors.array(),
+      product: {
+        _id: req.body.productId,
+        title: req.body.title,
+        price: req.body.price,
+        description: req.body.description,
+        imageUrl: req.body.imageUrl,
+      },
+    });
+  }
+
   Product.findById(req.body.productId)
     .then((productFetched) => {
       if (productFetched.userId.toString() !== req.user._id.toString()) {
