@@ -17,6 +17,23 @@ exports.getAddProduct = (req, res, next) => {
 };
 
 exports.postAddProduct = (req, res, next) => {
+  if (!req.file) {
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/add-product",
+      editing: false,
+      hasError: true,
+      errorMessage: "Attached file is not an image.",
+      validationErrors: [],
+      product: {
+        _id: req.productId,
+        title: req.body.title,
+        price: req.body.price,
+        description: req.body.description,
+      },
+    });
+  }
+
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -32,7 +49,6 @@ exports.postAddProduct = (req, res, next) => {
         title: req.body.title,
         price: req.body.price,
         description: req.body.description,
-        imageUrl: req.body.imageUrl,
       },
     });
   }
@@ -41,7 +57,7 @@ exports.postAddProduct = (req, res, next) => {
     title: req.body.title,
     price: req.body.price,
     description: req.body.description,
-    imageUrl: req.body.imageUrl,
+    imageUrl: req.file.path,
     userId: req.user,
   });
 
@@ -122,7 +138,6 @@ exports.postEditProduct = (req, res, next) => {
         title: req.body.title,
         price: req.body.price,
         description: req.body.description,
-        imageUrl: req.body.imageUrl,
       },
     });
   }
@@ -132,17 +147,28 @@ exports.postEditProduct = (req, res, next) => {
       if (productFetched.userId.toString() !== req.user._id.toString()) {
         return res.redirect("/");
       }
-
       productFetched.title = req.body.title;
       productFetched.price = req.body.price;
-      productFetched.imageUrl = req.body.imageUrl;
       productFetched.description = req.body.description;
 
-      productFetched.save().then(() => {
-        res.redirect("/admin/products");
-      });
+      if (req.file) {
+        productFetched.imageUrl = req.file.path;
+      }
+
+      productFetched
+        .save()
+        .then(() => {
+          res.redirect("/admin/products");
+        })
+        .catch((err) => {
+          const error = new Error(err);
+          error.status(500);
+          return next(error);
+        });
     })
     .catch((err) => {
+      console.log(err);
+
       const error = new Error(err);
       error.status(500);
       return next(error);
