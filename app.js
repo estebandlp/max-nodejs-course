@@ -1,7 +1,6 @@
 const path = require("path");
 
 const express = require("express");
-const bodyParser = require("body-parser");
 
 const errorController = require("./controllers/error");
 const databaseConnect = require("./util/database").databaseConnect;
@@ -25,7 +24,7 @@ const fileStorage = multer.diskStorage({
     cb(null, "images");
   },
   filename: (req, file, cb) => {
-    cb(null, "file"+ "-" + file.originalname);
+    cb(null, "file" + "-" + file.originalname);
   },
 });
 
@@ -57,6 +56,7 @@ app.use(
   }).single("image")
 );
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/images", express.static(path.join(__dirname, "images")));
 app.use(
   session({
     secret: "in-production-must-be-long-string-value",

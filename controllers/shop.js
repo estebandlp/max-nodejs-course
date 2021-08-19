@@ -1,5 +1,8 @@
 const Product = require("../models/product");
 const Order = require("../models/order");
+const fs = require("fs");
+const path = require("path");
+const PDFDocument = require("pdfKit");
 
 exports.getProducts = (req, res, next) => {
   Product.find()
@@ -141,5 +144,59 @@ exports.getOrders = (req, res, next) => {
       const error = new Error(err);
       error.status(500);
       return next(error);
+    });
+};
+
+exports.getInvoice = (req, res, next) => {
+  const orderId = req.params.orderId;
+
+  Order.findById(orderId)
+    .then((order) => {
+      if (!order) {
+        return next(new Error("No order found."));
+      }
+
+      if (order.user.userId.toString() !== req.user._id.toString()) {
+        return next(new Error("Unauthorized."));
+      }
+
+      const invoiceName = "invoice-" + orderId + ".pdf";
+      const invoicePath = path.join("data", "invoices", invoiceName);
+
+      const pdfDoc = new PDFDocument();
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="' + invoicePath + '"'
+      );
+      pdfDoc.pipe(fs.createWriteStream(invoicePath));
+      pdfDoc.pipe(res);
+
+      pdfDoc.fontSize(18).text("It's just a dummy file to test PDFKit!");
+      pdfDoc.fontSize(26).text("Involice", {
+        underline: true,
+      });
+      pdfDoc.fontSize(18).text("Porducts in order:");
+
+      let totalPrice = 0;
+      let text = "";
+      order.products.forEach((prod) => {
+        totalPrice = +prod.product.price * prod.quantity;
+
+        text =
+          prod.product.title +
+          " - " +
+          prod.quantity +
+          " x $ " +
+          prod.product.price;
+
+        pdfDoc.fontSize(13).text(text);
+      });
+      pdfDoc.fontSize(13).text("Total: $" + totalPrice);
+
+      pdfDoc.end();
+    })
+    .catch((err) => {
+      next(err);
     });
 };
