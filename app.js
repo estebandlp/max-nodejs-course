@@ -111,7 +111,5 @@ databaseConnect()
     app.listen(3000);
   })
   .catch((err) => {
-    const error = new Error(err);
-    error.status(500);
-    return next(error);
+    throw new Error(err);
   });
