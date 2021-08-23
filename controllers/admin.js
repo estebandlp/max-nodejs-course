@@ -178,13 +178,13 @@ exports.postEditProduct = (req, res, next) => {
     });
 };
 
-exports.postDeleteProduct = (req, res, next) => {
-  Product.findById(req.body.productId)
+exports.deleteProduct = (req, res, next) => {
+  Product.findById(req.params.productId)
     .then((prod) => {
       if (!prod) {
         return next(new Error("Product not found."));
       }
-      
+
       fileHelper.deleteFile(prod.imageUrl);
 
       return Product.deleteOne({
@@ -193,10 +193,13 @@ exports.postDeleteProduct = (req, res, next) => {
       });
     })
     .then(() => {
-      res.redirect("/admin/products");
+      res.status(200).json({
+        message: "Success!",
+      });
     })
     .catch((err) => {
-      const error = new Error(err);
-      return next(error);
+      res.status(500).json({
+        message: "Deleting product failed!",
+      });
     });
 };
