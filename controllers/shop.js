@@ -3,6 +3,10 @@ const Order = require("../models/order");
 const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfKit");
+const { request } = require("http");
+const stripe = require("stripe")(
+  "sk_test_51JRjf2ANJC046JQDCw0ec6GWKAmsYFRvOrCs7gSSJJTVZBZgvZDMgy2IDFSu10JKkBSNwyjFvIjfAbu9SgCyJONE00rEqyKZKy"
+);
 
 const ITEMS_PER_PAGE = 1;
 
@@ -19,7 +23,6 @@ exports.getProducts = (req, res, next) => {
         .limit(ITEMS_PER_PAGE);
     })
     .then((products) => {
-      console.log(Math.ceil(totalItems / ITEMS_PER_PAGE));
       res.render("shop/product-list", {
         prods: products,
         pageTitle: "Products",
@@ -128,7 +131,49 @@ exports.postCartDeleteProduct = (req, res, next) => {
     });
 };
 
-exports.postOrder = (req, res, next) => {
+exports.getCheckout = (req, res, next) => {
+  let products;
+  let total = 0;
+
+  const user = req.user;
+  user
+    .populate("cart.items.productId")
+    .execPopulate()
+    .then((user) => {
+      products = user.cart.items;
+      total = 0;
+      products.forEach((p) => {
+        total += p.quantity * p.productId.price;
+      });
+
+      return stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: products.map((p) => {
+          return {
+            name: p.productId.title,
+            description: p.productId.description,
+            amount: p.productId.price * 100,
+            currency: "usd",
+            quantity: p.quantity,
+          };
+        }),
+        success_url:
+          req.protocol + "://" + req.get("host") + "/checkout/success",
+        cancel_url: req.protocol + "://" + req.get("host") + "/checkout/cancel",
+      });
+    })
+    .then((stripeSession) => {
+      res.render("shop/checkout", {
+        path: "/checkout",
+        pageTitle: "Checkout",
+        products: products,
+        totalSum: total,
+        sessionId: stripeSession.id,
+      });
+    });
+};
+
+exports.getCheckoutSuccess = (req, res, next) => {
   req.user
     .populate("cart.items.productId")
     .execPopulate()
