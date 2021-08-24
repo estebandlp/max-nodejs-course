@@ -3,7 +3,6 @@ const Order = require("../models/order");
 const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfKit");
-const { request } = require("http");
 const stripe = require("stripe")(
   "sk_test_51JRjf2ANJC046JQDCw0ec6GWKAmsYFRvOrCs7gSSJJTVZBZgvZDMgy2IDFSu10JKkBSNwyjFvIjfAbu9SgCyJONE00rEqyKZKy"
 );
