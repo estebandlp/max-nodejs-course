@@ -1,2 +1,2 @@
-node_modules
-util/database.js
+server_side_app/node_modules
+rest_api_app/node_modules
