@@ -6,4 +6,7 @@ const router = express.Router();
 // GET /feed/posts
 router.get("/posts", feedController.getPosts);
 
-module.exports;
+// POST /feed/posts
+router.post("/posts", feedController.createPost);
+
+module.exports = router;
