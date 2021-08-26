@@ -1,11 +1,9 @@
-
-
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 server_side_app/node_modules
-rest_api_basics_app/node_modules
-rest_api_full_app/node_modules
+rest_api/nodejs/node_modules
+rest_api/webapp/node_modules
 
 # testing
 /coverage
