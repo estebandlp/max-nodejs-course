@@ -6,6 +6,7 @@ const databaseConnect = require("./util/database").databaseConnect;
 const path = require("path");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
+const { init } = require("./models/post");
 
 const app = express();
 
@@ -37,13 +38,13 @@ app.use(
 app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE"
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Authorization, X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method"
   );
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
+  res.header("Allow", "GET, POST, OPTIONS, PUT, DELETE");
   next();
 });
 
@@ -60,7 +61,12 @@ app.use((error, req, res, next) => {
 
 databaseConnect()
   .then(() => {
-    app.listen(8080);
+    const server = app.listen(8080);
+    const io = require("./socket").init(server);
+
+    io.on("connectio", (socket) => {
+      console.log("Client connectect");
+    });
   })
   .catch((err) => {
     throw new Error(err);
