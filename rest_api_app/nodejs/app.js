@@ -6,7 +6,12 @@ const databaseConnect = require("./util/database").databaseConnect;
 const path = require("path");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
-const { init } = require("./models/post");
+const { graphqlHTTP } = require("express-graphql");
+const auth = require("./middleware/is-auth");
+const fs = require("fs");
+
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
 
 const app = express();
 
@@ -38,18 +43,56 @@ app.use(
 app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Authorization, X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method"
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE"
   );
-  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
-  res.header("Allow", "GET, POST, OPTIONS, PUT, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
   next();
 });
 
 app.use("/feed", feedRoutes);
 app.use("/auth", authRoutes);
+
+app.use(auth);
+
+app.put("/post-image", (req, res, next) => {
+  if (!req.isAuth) {
+    throw new Error("Not authenticated!");
+  }
+  if (!req.file) {
+    return res.status(200).json({ message: "No file provided!" });
+  }
+  if (req.body.oldPath) {
+    clearImage(req.body.oldPath);
+  }
+  return res
+    .status(201)
+    .json({ message: "File stored.", filePath: req.file.path });
+});
+
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+    customFormatErrorFn(err) {
+      if (!err.originalError) {
+        return err;
+      }
+      const data = err.originalError.data;
+      const message = err.message || "An error occurred.";
+      const code = err.originalError.code || 500;
+      return { message: message, status: code, data: data };
+    },
+  })
+);
 
 app.use((error, req, res, next) => {
   const status = error.statusCode || 500;
@@ -61,13 +104,13 @@ app.use((error, req, res, next) => {
 
 databaseConnect()
   .then(() => {
-    const server = app.listen(8080);
-    const io = require("./socket").init(server);
-
-    io.on("connectio", (socket) => {
-      console.log("Client connectect");
-    });
+    app.listen(8080);
   })
   .catch((err) => {
     throw new Error(err);
   });
+
+const clearImage = (filePath) => {
+  filePath = path.join(__dirname, "..", filePath);
+  fs.unlink(filePath, (err) => console.log(err));
+};
