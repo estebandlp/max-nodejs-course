@@ -1,6 +1,8 @@
 const path = require("path");
 
 const express = require("express");
+const fs = require("fs");
+const https = require("https");
 
 const errorController = require("./controllers/error");
 const databaseConnect = require("./util/database").databaseConnect;
@@ -10,6 +12,9 @@ const MongoDBStore = require("connect-mongodb-session")(session);
 const csrf = require("csurf");
 const connectFlash = require("connect-flash");
 const multer = require("multer");
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
 
 const app = express();
 const store = new MongoDBStore({
@@ -45,6 +50,15 @@ app.set("views", "views");
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
 const authRoutes = require("./routes/auth");
+
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+
+app.use(helmet());
+app.use(compression());
+app.use(morgan("combined", { stream: accessLogStream }));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -108,7 +122,7 @@ app.use((error, req, res, next) => {
 
 databaseConnect()
   .then(() => {
-    app.listen(3000);
+    app.listen(process.env.PORT || 3000);
   })
   .catch((err) => {
     throw new Error(err);
