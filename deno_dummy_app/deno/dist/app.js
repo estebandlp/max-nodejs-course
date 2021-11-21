@@ -36,14 +36,30 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var mod_ts_1 = require("https://deno.land/x/oak/mod.ts");
+var mod_ts_1 = require("https://deno.land/std@0.50.0/path/mod.ts");
 var todos_ts_1 = require("./routes/todos.ts");
+var db_client_ts_1 = require("./helpers/db_client.ts");
+db_client_ts_1.connect();
 var app = new mod_ts_1.Application();
 app.use(function (ctx, next) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                console.log("Middleware!");
+                console.log('Middleware!');
+                return [4 /*yield*/, next()];
+            case 1:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+app.use(function (ctx, next) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                ctx.response.headers.set('Access-Control-Allow-Origin', '*');
+                ctx.response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+                ctx.response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
                 return [4 /*yield*/, next()];
             case 1:
                 _a.sent();
@@ -53,4 +69,4 @@ app.use(function (ctx, next) { return __awaiter(void 0, void 0, void 0, function
 }); });
 app.use(todos_ts_1["default"].routes());
 app.use(todos_ts_1["default"].allowedMethods());
-await app.listen({ port: 3000 });
+await app.listen({ port: 8000 });

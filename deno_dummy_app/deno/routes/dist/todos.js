@@ -37,52 +37,76 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 var mod_ts_1 = require("https://deno.land/x/oak/mod.ts");
+var mod_ts_2 = require("https://deno.land/x/mongo@v0.8.0/mod.ts");
+var db_client_ts_1 = require("../helpers/db_client.ts");
 var router = new mod_ts_1.Router();
-var todos = [];
-router.get("/todos", function (ctx) {
-    ctx.response.body = { todos: todos };
-});
-router.post("/todos", function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var value, text, newTodo;
+router.get("/todos", function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var todos, transformedTodos;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0:
-                value = ctx.request.body({ type: "json" }).value;
-                return [4 /*yield*/, value];
+            case 0: return [4 /*yield*/, db_client_ts_1.getDb().collection("todos").find()];
             case 1:
-                text = (_a.sent()).text;
+                todos = _a.sent();
+                transformedTodos = todos.map(function (todo) {
+                    return { id: todo._id.$oid, text: todo.text };
+                });
+                ctx.response.body = { todos: transformedTodos };
+                return [2 /*return*/];
+        }
+    });
+}); });
+router.post("/todos", function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var data, newTodo, id;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, ctx.request.body()];
+            case 1:
+                data = _a.sent();
                 newTodo = {
-                    id: new Date().toISOString(),
-                    text: text
+                    text: data.value.text
                 };
-                todos.push(newTodo);
+                return [4 /*yield*/, db_client_ts_1.getDb().collection("todos").insertOne(newTodo)];
+            case 2:
+                id = _a.sent();
+                newTodo.id = id.$oid;
                 ctx.response.body = { message: "Created todo!", todo: newTodo };
                 return [2 /*return*/];
         }
     });
 }); });
 router.put("/todos/:todoId", function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
-    var value, text, tid, todoIndex;
+    var tid, data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                value = ctx.request.body({ type: "json" }).value;
-                return [4 /*yield*/, value];
-            case 1:
-                text = (_a.sent()).text;
                 tid = ctx.params.todoId;
-                todoIndex = todos.findIndex(function (todo) {
-                    return todo.id === tid;
-                });
-                todos[todoIndex] = { id: todos[todoIndex].id, text: text };
+                return [4 /*yield*/, ctx.request.body()];
+            case 1:
+                data = _a.sent();
+                return [4 /*yield*/, db_client_ts_1.getDb()
+                        .collection("todos")
+                        .updateOne({ _id: mod_ts_2.ObjectId(tid) }, { $set: { text: data.value.text } })];
+            case 2:
+                _a.sent();
                 ctx.response.body = { message: "Updated todo" };
                 return [2 /*return*/];
         }
     });
 }); });
-router["delete"]("/todos/:todoId", function (ctx) {
-    var tid = ctx.params.todoId;
-    todos = todos.filter(function (todo) { return todo.id !== tid; });
-    ctx.response.body = { message: "Deleted todo" };
-});
+router["delete"]("/todos/:todoId", function (ctx) { return __awaiter(void 0, void 0, void 0, function () {
+    var tid;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                tid = ctx.params.todoId;
+                return [4 /*yield*/, db_client_ts_1.getDb()
+                        .collection("todos")
+                        .deleteOne({ _id: mod_ts_2.ObjectId(tid) })];
+            case 1:
+                _a.sent();
+                ctx.response.body = { message: "Deleted todo" };
+                return [2 /*return*/];
+        }
+    });
+}); });
 exports["default"] = router;
